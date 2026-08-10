@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 16:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/10 19:34:20 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/10 21:41:49 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ int	take_two_dongles(t_coder *c)
 {
 	if (!c)
 		return (1);
-	if (c->left == c->right)
+	if (c->left == c->right) //this is where there is only one coder <==> one dongle => should sleep instead
 		return (take_dongle(c->left, c));
 	if (dongle_first(c) == 0)
 	{
