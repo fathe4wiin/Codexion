@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/04 17:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/10 19:35:40 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/11 21:53:09 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,6 +87,7 @@ typedef struct s_coder
 	t_dongle		*right;
 	pthread_t		thread;
 	t_sim			*sim;
+	pthread_mutex_t state_mtx;
 }	t_coder;
 
 typedef struct s_sim

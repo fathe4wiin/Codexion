@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 16:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/10 19:35:23 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/11 22:01:13 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,9 @@ int	check_burnouts(t_sim *sim)
 	i = 0;
 	while (i < sim->cfg.n_coders)
 	{
+		pthread_mutex_lock(&(sim->coders[i].state_mtx));
 		base = sim->coders[i].last_compile;
+		pthread_mutex_unlock(&(sim->coders[i].state_mtx));
 		if (!base)
 			base = sim->start_ms;
 		if (now - base >= sim->cfg.t_burnout)

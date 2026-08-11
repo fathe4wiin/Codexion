@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 16:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/10 21:41:49 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/11 21:55:09 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,10 @@ int	do_compile(t_coder *c)
 {
 	if (!c || !c->sim || is_stopped(c->sim))
 		return (1);
+	pthread_mutex_lock(&c->state_mtx);
 	c->last_compile = get_time_ms();
 	log_msg(c->sim, c->id, ST_COMPILE);
+	pthread_mutex_unlock(&c->state_mtx);
 	return (act_sleep(c->sim, c->sim->cfg.t_compile));
 }
 
