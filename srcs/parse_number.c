@@ -19,6 +19,10 @@ int	parse_pos_int(const char *s, int *out)
 
 	if (!s || !*s || !out)
 		return (0);
+	if (*s == '+')
+		s++;
+	if (!*s)
+		return (0);
 	value = 0;
 	while (*s)
 	{
@@ -43,6 +47,10 @@ int	parse_nn_int(const char *s, int *out)
 
 	if (!s || !*s || !out)
 		return (0);
+	if (*s == '+')
+		s++;
+	if (!*s)
+		return (0);
 	value = 0;
 	while (*s)
 	{
@@ -64,6 +72,10 @@ int	parse_nn_ll(const char *s, long long *out)
 	int					digit;
 
 	if (!s || !*s || !out)
+		return (0);
+	if (*s == '+')
+		s++;
+	if (!*s)
 		return (0);
 	value = 0;
 	while (*s)
