@@ -57,6 +57,38 @@ int	heap_peek(t_heap *h, t_req *out)
 	return (0);
 }
 
+int	heap_find(t_heap *h, int coder_id)
+{
+	int	i;
+
+	if (!h || !h->data)
+		return (-1);
+	i = 0;
+	while (i < h->size)
+	{
+		if (h->data[i].coder_id == coder_id)
+			return (i);
+		i++;
+	}
+	return (-1);
+}
+
+int	heap_remove_id(t_heap *h, int coder_id)
+{
+	int	i;
+
+	i = heap_find(h, coder_id);
+	if (!h || i < 0)
+		return (1);
+	h->size--;
+	if (i == h->size)
+		return (0);
+	h->data[i] = h->data[h->size];
+	heap_sift_down(h, i);
+	heap_sift_up(h, i);
+	return (0);
+}
+
 void	heap_destroy(t_heap *h)
 {
 	if (!h)
