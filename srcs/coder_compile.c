@@ -51,37 +51,6 @@ void	release_two_dongles(t_coder *c)
 	}
 }
 
-int	take_two_dongles(t_coder *c)
-{
-	if (!c || !c->sim)
-		return (1);
-	if (c->left == c->right)
-	{
-		while (!is_stopped(c->sim))
-			usleep(1000);
-		return (1);
-	}
-	if (dongle_first(c) == 0)
-	{
-		if (take_dongle(c->left, c))
-			return (1);
-		if (take_dongle(c->right, c))
-		{
-			release_dongle(c->left, c);
-			return (1);
-		}
-		return (0);
-	}
-	if (take_dongle(c->right, c))
-		return (1);
-	if (take_dongle(c->left, c))
-	{
-		release_dongle(c->right, c);
-		return (1);
-	}
-	return (0);
-}
-
 int	compile_cycle(t_coder *c)
 {
 	if (!c || coder_should_exit(c))

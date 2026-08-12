@@ -25,14 +25,10 @@ int	req_better(t_heap *h, t_req *a, t_req *b)
 {
 	if (!h || !a || !b)
 		return (0);
-	if (h->sched == CX_FIFO)
-	{
-		if (a->arrival != b->arrival)
-			return (a->arrival < b->arrival);
-		return (a->coder_id < b->coder_id);
-	}
-	if (a->deadline != b->deadline)
+	if (h->sched == CX_EDF && a->deadline != b->deadline)
 		return (a->deadline < b->deadline);
+	if (a->arrival != b->arrival)
+		return (a->arrival < b->arrival);
 	return (a->coder_id < b->coder_id);
 }
 

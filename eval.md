@@ -129,7 +129,11 @@ before vs after. Rest must keep working (no duplication, serialized logs, no bur
 ### Older scale (`correction_page_2.pdf`) — if that sheet is used
 
 - Claims **C89** — this codebase is effectively C99 (`long long`, etc.); confirm which scale applies.
-- Recode: EDF tie-breaker prefer **higher** `coder_id` (you currently prefer **lower** in `req_better`).
+- Recode: EDF tie-breaker prefer **higher** `coder_id` — still the last line of
+  `req_better`; flip `a->coder_id < b->coder_id` to `>`. The comparator now
+  orders EDF by deadline, then request arrival, then id (equal deadlines are
+  systematic at startup, where preferring the lowest id starved coder 5), so the
+  id branch is exercised when several coders request in the same millisecond.
 
 ---
 
@@ -139,8 +143,46 @@ before vs after. Rest must keep working (no duplication, serialized logs, no bur
 2. Fix single-coder path so one dongle ≠ two hands (Easy #1).
 3. Init/destroy `state_mtx`; serialize `n_compiled`.
 4. Remove `//` comment; re-run Norm.
-5. Fix cooldown / grant / wait logic until `5 3000 … 400/800` completes without burnout consistently.
+5. ~~Fix cooldown / grant / wait logic~~ — done, see "Cooldown starvation fix" below.
 6. Practice FIFO→LIFO heap change for the recode.
+
+---
+
+## Cooldown starvation fix (resolved)
+
+**Symptom.** `5 3000 200 200 200 10 400 fifo` burned out at ~3000 with one coder
+never compiling, while others compiled several times.
+
+**Root cause: hold-and-wait.** A coder took its lower-id dongle, then blocked on
+the second one for the whole cooldown. The dongle it held sat idle and also
+blocked its neighbour, so throughput dropped to ~6 compiles / 3 s and one coder
+could be locked out for the entire run.
+
+**Fix.** A coder now queues on *both* dongles and takes them atomically under
+both mutexes (`try_pair_once` → `claim_or_mark`), so it never holds one while
+waiting. Its queue entries persist across retries, so it never loses its place.
+Two rules keep this both fair and fast:
+
+- a queued coder that cannot use a dongle (because its other dongle is busy or
+  cooling) marks that entry `blocked`, letting coders that do not compete for
+  that dongle pass it — without this, the ring serialized to one compile at a
+  time;
+- an entry older than `t_compile + dongle_cooldown` stops yielding
+  (`req_stale`), which bounds how many turns a waiter can lose and rules out the
+  out-of-phase starvation that plain bypassing allowed.
+
+Result: `… 10 400 fifo` and `… 10 400 edf` complete with 10–12 compiles per
+coder and no burnout, repeatedly.
+
+**`… 10 800` is infeasible, a burnout there is expected.** A dongle is reusable
+only every `t_compile + cooldown` = 1000 ms, and with 5 coders on a ring at most
+2 can compile at once, so there are 2 compile slots per 1000 ms window. Inside
+the first 3000 ms there are 3 such windows = 6 slots, but demand is 7: five
+first compiles plus a renewal for each of the 2 coders that compiled at t≈0
+(their deadline is 3000). Hence some coder necessarily misses 3000 ms. This
+matches the scale, which for the 800 case only asks to *compare grant order*
+between `fifo` and `edf`; the subject's liveness rule is scoped to feasible
+parameters.
 
 ---
 

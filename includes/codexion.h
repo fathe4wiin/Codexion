@@ -55,6 +55,7 @@ typedef struct s_config
 typedef struct s_req
 {
 	int			coder_id;
+	int			blocked;
 	long long	arrival;
 	long long	deadline;
 }	t_req;
@@ -139,21 +140,35 @@ void		heap_sift_up(t_heap *h, int i);
 void		heap_sift_down(t_heap *h, int i);
 void		heap_swap(t_req *a, t_req *b);
 int			req_better(t_heap *h, t_req *a, t_req *b);
+int			heap_find(t_heap *h, int coder_id);
+int			heap_remove_id(t_heap *h, int coder_id);
+void		heap_set_blocked(t_heap *h, int coder_id, int v);
 
-int			take_dongle(t_dongle *d, t_coder *c);
-int			try_acquire(t_dongle *d, t_coder *c);
-int			enqueue_waiter(t_dongle *d, t_coder *c);
-int			wait_for_grant(t_dongle *d, t_coder *c);
 int			dongle_ready(t_dongle *d);
+int			priority_ok(t_dongle *d, t_coder *c);
+int			usable_dongle(t_dongle *d, t_coder *c);
+int			ensure_queued(t_dongle *d, t_coder *c, t_req *req);
+void		dequeue_waiter(t_dongle *d, t_coder *c);
+void		lock_pair(t_dongle *a, t_dongle *b);
+void		unlock_pair(t_dongle *a, t_dongle *b);
+void		claim_pair(t_dongle *a, t_dongle *b, t_coder *c);
+void		leave_pair(t_dongle *a, t_dongle *b, t_coder *c);
+int			claim_or_mark(t_dongle *a, t_dongle *b, t_coder *c);
+int			req_stale(t_req *r, t_sim *sim);
+int			req_yields(t_req *r, t_sim *sim);
+void		wait_pair_tick(t_dongle *a, t_dongle *b);
 void		release_dongle(t_dongle *d, t_coder *c);
 void		arm_cooldown(t_dongle *d);
-void		grant_next(t_dongle *d);
 void		signal_waiter(t_dongle *d);
 
 void		*coder_routine(void *arg);
 int			coder_loop(t_coder *c);
 int			coder_should_exit(t_coder *c);
 int			compile_cycle(t_coder *c);
+void		build_req(t_req *req, t_coder *c);
+int			join_pair_queues(t_dongle *a, t_dongle *b, t_coder *c);
+int			wait_alone(t_coder *c);
+int			try_pair_once(t_coder *c, t_dongle *a, t_dongle *b);
 int			take_two_dongles(t_coder *c);
 int			do_compile(t_coder *c);
 void		release_two_dongles(t_coder *c);

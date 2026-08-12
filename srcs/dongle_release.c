@@ -26,25 +26,6 @@ void	signal_waiter(t_dongle *d)
 	pthread_cond_broadcast(&d->cv);
 }
 
-void	grant_next(t_dongle *d)
-{
-	t_req	next;
-
-	if (!d || d->queue.size <= 0)
-		return ;
-	if (!dongle_ready(d))
-	{
-		signal_waiter(d);
-		return ;
-	}
-	if (heap_peek(&d->queue, &next))
-		return ;
-	if (heap_pop(&d->queue, &next))
-		return ;
-	d->holder = next.coder_id;
-	signal_waiter(d);
-}
-
 void	release_dongle(t_dongle *d, t_coder *c)
 {
 	if (!d || !c)
@@ -54,7 +35,7 @@ void	release_dongle(t_dongle *d, t_coder *c)
 	{
 		d->holder = -1;
 		arm_cooldown(d);
-		grant_next(d);
+		signal_waiter(d);
 	}
 	pthread_mutex_unlock(&d->mtx);
 }
