@@ -53,10 +53,14 @@ void	release_two_dongles(t_coder *c)
 
 int	take_two_dongles(t_coder *c)
 {
-	if (!c)
+	if (!c || !c->sim)
 		return (1);
-	if (c->left == c->right) //this is where there is only one coder <==> one dongle => should sleep instead
-		return (take_dongle(c->left, c));
+	if (c->left == c->right)
+	{
+		while (!is_stopped(c->sim))
+			usleep(1000);
+		return (1);
+	}
 	if (dongle_first(c) == 0)
 	{
 		if (take_dongle(c->left, c))

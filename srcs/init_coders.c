@@ -47,6 +47,34 @@ void	link_coder_dongles(t_sim *sim)
 	}
 }
 
+static void	rollback_coders(t_sim *sim, int last)
+{
+	while (last >= 0)
+	{
+		pthread_mutex_destroy(&sim->coders[last].state_mtx);
+		sim->coders[last].sim = NULL;
+		last--;
+	}
+}
+
+void	destroy_coders(t_sim *sim)
+{
+	int	i;
+
+	if (!sim || !sim->coders)
+		return ;
+	i = 0;
+	while (i < sim->cfg.n_coders)
+	{
+		if (sim->coders[i].sim)
+		{
+			pthread_mutex_destroy(&sim->coders[i].state_mtx);
+			sim->coders[i].sim = NULL;
+		}
+		i++;
+	}
+}
+
 int	init_coders(t_sim *sim)
 {
 	int	i;
@@ -57,6 +85,12 @@ int	init_coders(t_sim *sim)
 	while (i < sim->cfg.n_coders)
 	{
 		reset_coder(&sim->coders[i], i + 1, sim);
+		if (pthread_mutex_init(&sim->coders[i].state_mtx, NULL))
+		{
+			sim->coders[i].sim = NULL;
+			rollback_coders(sim, i - 1);
+			return (1);
+		}
 		i++;
 	}
 	link_coder_dongles(sim);

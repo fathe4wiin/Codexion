@@ -57,6 +57,7 @@ void	cleanup_sim(t_sim *sim)
 	if (!sim)
 		return ;
 	destroy_dongles(sim);
+	destroy_coders(sim);
 	if (sim->start_ms)
 	{
 		destroy_shared(sim);

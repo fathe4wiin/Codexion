@@ -128,6 +128,7 @@ int			init_one_dongle(t_dongle *d, int id, t_sim *sim);
 int			init_coders(t_sim *sim);
 void		link_coder_dongles(t_sim *sim);
 void		reset_coder(t_coder *c, int id, t_sim *sim);
+void		destroy_coders(t_sim *sim);
 
 int			heap_init(t_heap *h, int cap, t_sched sched);
 int			heap_push(t_heap *h, t_req req);
