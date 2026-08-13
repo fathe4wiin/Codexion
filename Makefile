@@ -15,8 +15,6 @@ SRCS		= \
 	$(SRCS_DIR)/init_dongles.c \
 	$(SRCS_DIR)/init_coders.c \
 	$(SRCS_DIR)/heap.c \
-	$(SRCS_DIR)/heap_sift.c \
-	$(SRCS_DIR)/heap_queue.c \
 	$(SRCS_DIR)/dongle_take.c \
 	$(SRCS_DIR)/dongle_pair.c \
 	$(SRCS_DIR)/dongle_wait.c \

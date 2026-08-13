@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/04 17:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/11 21:53:09 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/13 19:00:00 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 # include <string.h>
 # include <unistd.h>
 # include <limits.h>
+
+# define HEAP_CAP 2
 
 typedef enum e_sched
 {
@@ -62,9 +64,8 @@ typedef struct s_req
 
 typedef struct s_heap
 {
-	t_req		*data;
+	t_req		data[HEAP_CAP];
 	int			size;
-	int			cap;
 	t_sched		sched;
 }	t_heap;
 
@@ -131,30 +132,22 @@ void		link_coder_dongles(t_sim *sim);
 void		reset_coder(t_coder *c, int id, t_sim *sim);
 void		destroy_coders(t_sim *sim);
 
-int			heap_init(t_heap *h, int cap, t_sched sched);
+int			heap_init(t_heap *h, t_sched sched);
 int			heap_push(t_heap *h, t_req req);
-int			heap_pop(t_heap *h, t_req *out);
-int			heap_peek(t_heap *h, t_req *out);
-void		heap_destroy(t_heap *h);
-void		heap_sift_up(t_heap *h, int i);
-void		heap_sift_down(t_heap *h, int i);
-void		heap_swap(t_req *a, t_req *b);
-int			req_better(t_heap *h, t_req *a, t_req *b);
 int			heap_find(t_heap *h, int coder_id);
 int			heap_remove_id(t_heap *h, int coder_id);
-void		heap_set_blocked(t_heap *h, int coder_id, int v);
-
+int			req_better(t_req *a, t_req *b, t_sched sched);
 int			dongle_ready(t_dongle *d);
 int			priority_ok(t_dongle *d, t_coder *c);
 int			usable_dongle(t_dongle *d, t_coder *c);
 int			ensure_queued(t_dongle *d, t_coder *c, t_req *req);
 void		dequeue_waiter(t_dongle *d, t_coder *c);
+void		waiter_set_blocked(t_dongle *d, t_coder *c, int v);
 void		lock_pair(t_dongle *a, t_dongle *b);
 void		unlock_pair(t_dongle *a, t_dongle *b);
 void		claim_pair(t_dongle *a, t_dongle *b, t_coder *c);
 void		leave_pair(t_dongle *a, t_dongle *b, t_coder *c);
 int			claim_or_mark(t_dongle *a, t_dongle *b, t_coder *c);
-int			req_stale(t_req *r, t_sim *sim);
 int			req_yields(t_req *r, t_sim *sim);
 void		wait_pair_tick(t_dongle *a, t_dongle *b);
 void		release_dongle(t_dongle *d, t_coder *c);
@@ -167,7 +160,6 @@ int			coder_should_exit(t_coder *c);
 int			compile_cycle(t_coder *c);
 void		build_req(t_req *req, t_coder *c);
 int			join_pair_queues(t_dongle *a, t_dongle *b, t_coder *c);
-int			wait_alone(t_coder *c);
 int			try_pair_once(t_coder *c, t_dongle *a, t_dongle *b);
 int			take_two_dongles(t_coder *c);
 int			do_compile(t_coder *c);

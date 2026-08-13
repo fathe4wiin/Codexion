@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/08 16:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/12 21:30:00 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/13 19:00:00 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,40 +17,6 @@ int	dongle_ready(t_dongle *d)
 	if (!d)
 		return (0);
 	return (get_time_ms() >= d->ready_at);
-}
-
-/*
-** A request ahead of ours only holds us back while its owner is able to use
-** this dongle: a coder waiting for its other dongle marks itself blocked.
-*/
-int	priority_ok(t_dongle *d, t_coder *c)
-{
-	t_heap	*h;
-	int		self;
-	int		i;
-
-	h = &d->queue;
-	self = heap_find(h, c->id);
-	if (self < 0)
-		return (0);
-	i = 0;
-	while (i < h->size)
-	{
-		if (i != self && !req_yields(&h->data[i], d->sim)
-			&& req_better(h, &h->data[i], &h->data[self]))
-			return (0);
-		i++;
-	}
-	return (1);
-}
-
-int	usable_dongle(t_dongle *d, t_coder *c)
-{
-	if (!d || !c)
-		return (0);
-	if (d->holder >= 0 || !dongle_ready(d))
-		return (0);
-	return (priority_ok(d, c));
 }
 
 int	ensure_queued(t_dongle *d, t_coder *c, t_req *req)
@@ -67,4 +33,15 @@ void	dequeue_waiter(t_dongle *d, t_coder *c)
 	if (!d || !c)
 		return ;
 	heap_remove_id(&d->queue, c->id);
+}
+
+void	waiter_set_blocked(t_dongle *d, t_coder *c, int v)
+{
+	int	i;
+
+	if (!d || !c)
+		return ;
+	i = heap_find(&d->queue, c->id);
+	if (i >= 0)
+		d->queue.data[i].blocked = v;
 }

@@ -6,7 +6,7 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/04 17:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/10 19:35:23 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/13 18:40:00 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@ static void	rollback_dongles(t_sim *sim, int last)
 	while (last >= 0)
 	{
 		d = &sim->dongles[last];
-		heap_destroy(&d->queue);
 		pthread_mutex_destroy(&d->mtx);
 		pthread_cond_destroy(&d->cv);
 		d->sim = NULL;
@@ -34,17 +33,12 @@ int	init_one_dongle(t_dongle *d, int id, t_sim *sim)
 	d->id = id;
 	d->holder = -1;
 	d->ready_at = 0;
-	if (heap_init(&d->queue, sim->cfg.n_coders, sim->cfg.sched))
-		return (1);
+	heap_init(&d->queue, sim->cfg.sched);
 	if (pthread_mutex_init(&d->mtx, NULL))
-	{
-		heap_destroy(&d->queue);
 		return (1);
-	}
 	if (pthread_cond_init(&d->cv, NULL))
 	{
 		pthread_mutex_destroy(&d->mtx);
-		heap_destroy(&d->queue);
 		return (1);
 	}
 	d->sim = sim;

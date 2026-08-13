@@ -46,11 +46,6 @@
   },
   {
     "directory": "/home/fathe4wiin/Documents/Codexion",
-    "command": "cc -Wall -Wextra -Werror -pthread -Iincludes -c srcs/heap_sift.c -o srcs/heap_sift.o",
-    "file": "srcs/heap_sift.c"
-  },
-  {
-    "directory": "/home/fathe4wiin/Documents/Codexion",
     "command": "cc -Wall -Wextra -Werror -pthread -Iincludes -c srcs/dongle_take.c -o srcs/dongle_take.o",
     "file": "srcs/dongle_take.c"
   },
