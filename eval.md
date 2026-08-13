@@ -130,10 +130,10 @@ before vs after. Rest must keep working (no duplication, serialized logs, no bur
 
 - Claims **C89** — this codebase is effectively C99 (`long long`, etc.); confirm which scale applies.
 - Recode: EDF tie-breaker prefer **higher** `coder_id` — still the last line of
-  `req_better`; flip `a->coder_id < b->coder_id` to `>`. The comparator now
-  orders EDF by deadline, then request arrival, then id (equal deadlines are
-  systematic at startup, where preferring the lowest id starved coder 5), so the
-  id branch is exercised when several coders request in the same millisecond.
+  `req_better`; flip `a->coder_id < b->coder_id` to `>`. EDF orders by deadline,
+  then id, so that branch is the direct tie-break and is exercised constantly:
+  equal deadlines are systematic at startup, since a coder that compiled at t≈0
+  has the same deadline as one that never compiled.
 
 ---
 

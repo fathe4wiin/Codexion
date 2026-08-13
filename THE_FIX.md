@@ -145,18 +145,22 @@ turns.
 
 ## 5. EDF tie-break
 
-`req_better` now orders EDF by **deadline, then request arrival, then coder id**
-(FIFO is unchanged: arrival, then id).
+`req_better` keeps the textbook comparators: FIFO orders by **arrival, then
+coder id**, EDF by **deadline, then coder id**.
 
 Equal deadlines are not rare at startup, they are systematic: a coder that
 compiled at t≈0 has `last_compile + t_burnout` equal to a coder that never
-compiled at all. Always resolving that tie by lowest id starved coder 5 in
-roughly 1 run in 7 at cooldown 400. Preferring the longest-waiting request
-removes the bias and is still fully deterministic, as the subject requires.
+compiled at all, so the tie-break decides the grant order for real. Inserting
+request `arrival` before the id was tried, since resolving every tie by lowest id
+biases against the highest id. Measured over 8 runs of
+`5 3000 200 200 200 10 400 edf`: deadline → id gives 7/8 clean, deadline →
+arrival → id gives 8/8.
 
-The recode targets stay one-liners: FIFO → LIFO flips the `arrival` comparison,
-and "EDF prefers the higher id" flips the final `coder_id` comparison, which is
-still exercised whenever several coders request within the same millisecond.
+The plain comparator was kept deliberately: it is EDF as defined, and it keeps
+the recode drills to one line each. FIFO → LIFO flips the `arrival` comparison,
+and "EDF prefers the higher id" flips the `coder_id` comparison, which is the
+direct tie-break on equal deadlines. The cost is the run in eight above, where
+the lowest-id bias lets one coder miss its deadline.
 
 ## 6. What changed, file by file
 
@@ -169,7 +173,7 @@ still exercised whenever several coders request within the same millisecond.
 | `srcs/dongle_take.c` | rewritten: `dongle_ready`, `priority_ok`, `usable_dongle`, `ensure_queued`, `dequeue_waiter`. `try_acquire`, `enqueue_waiter` and `wait_for_grant` are gone |
 | `srcs/dongle_release.c` | `grant_next` removed. Handing a dongle to a queued coder is wrong now that dongles are only taken in pairs; `release_dongle` clears the holder, arms the cooldown and broadcasts |
 | `srcs/coder_compile.c` | old sequential `take_two_dongles` removed; the rest (`do_compile`, `release_two_dongles`, `compile_cycle`) unchanged |
-| `srcs/heap_sift.c` | `req_better`: arrival inserted as the EDF tie-break before coder id |
+| `srcs/heap_sift.c` | unchanged — the EDF tie-break stays deadline, then coder id (see §5) |
 | `includes/codexion.h` | `t_req` gains `blocked`; prototypes updated for the added/removed functions |
 | `Makefile` | four new sources added to `SRCS` |
 | `test_eval_cases.sh` | runs the full scale suite; assertions corrected (see below) |
@@ -182,7 +186,7 @@ Norm limits hold everywhere: at most 5 functions per file, no function body over
 | Case | Before | After |
 |------|--------|-------|
 | `5 3000 200 200 200 10 400 fifo` | burnout ~3000, one coder with 0 compiles | completes, 10–12 compiles per coder, 11/11 runs clean |
-| `5 3000 200 200 200 10 400 edf` | burnout ~3000 | completes, 8/8 runs clean after the tie-break change |
+| `5 3000 200 200 200 10 400 edf` | burnout ~3000 | completes, 7/8 runs clean (see §5 on the tie-break) |
 | `5 2000 200 200 200 10 0 fifo` / `7 0 edf` | pass | pass |
 | `1 800 …` single coder | burns out, no take | unchanged (correct) |
 | `5 500 …` infeasible | burnout last line | unchanged (correct) |
