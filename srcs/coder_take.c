@@ -35,73 +35,46 @@ int	join_pair_queues(t_dongle *a, t_dongle *b, t_coder *c)
 	return (0);
 }
 
-void	wait_pair_tick(t_dongle *a, t_dongle *b)
-{
-	t_dongle		*p;
-	struct timespec	ts;
-	long long		until;
-
-	p = a;
-	if (b->id < a->id)
-		p = b;
-	until = get_time_ms() + 1;
-	ts.tv_sec = (time_t)(until / 1000);
-	ts.tv_nsec = (long)((until % 1000) * 1000000L);
-	pthread_mutex_lock(&p->mtx);
-	pthread_cond_timedwait(&p->cv, &p->mtx, &ts);
-	pthread_mutex_unlock(&p->mtx);
-}
-
 int	try_pair_once(t_coder *c, t_dongle *a, t_dongle *b)
 {
-	int	st;
-
-	lock_pair(a, b);
-	if (is_stopped(c->sim))
-	{
-		leave_pair(a, b, c);
-		unlock_pair(a, b);
-		return (2);
-	}
 	if (join_pair_queues(a, b, c))
-	{
-		unlock_pair(a, b);
 		return (1);
-	}
-	st = claim_or_mark(a, b, c);
-	unlock_pair(a, b);
-	if (st == 0)
-	{
-		log_take(c->sim, c->id);
-		log_take(c->sim, c->id);
-	}
-	return (st);
+	return (claim_or_mark(a, b, c));
+}
+
+int	wait_for_stop(t_sim *sim)
+{
+	pthread_mutex_lock(&sim->table_mtx);
+	while (!sim->stopped)
+		pthread_cond_wait(&sim->table_cv, &sim->table_mtx);
+	pthread_mutex_unlock(&sim->table_mtx);
+	return (1);
 }
 
 int	take_two_dongles(t_coder *c)
 {
-	t_dongle	*a;
-	t_dongle	*b;
-	int			st;
+	t_sim	*sim;
+	int		st;
 
-	if (!c || !c->sim)
-		return (1);
+	sim = c->sim;
 	if (c->left == c->right)
+		return (wait_for_stop(sim));
+	st = 1;
+	pthread_mutex_lock(&sim->table_mtx);
+	while (st && !sim->stopped)
 	{
-		while (!is_stopped(c->sim))
-			usleep(1000);
-		return (1);
-	}
-	a = c->left;
-	b = c->right;
-	while (!is_stopped(c->sim))
-	{
-		st = try_pair_once(c, a, b);
+		st = try_pair_once(c, c->left, c->right);
 		if (st == 2)
-			return (1);
-		if (st == 0)
-			return (0);
-		wait_pair_tick(a, b);
+			pthread_cond_broadcast(&sim->table_cv);
+		if (st)
+			table_wait(sim, pair_wake_at(c->left, c->right));
 	}
-	return (1);
+	if (st)
+		leave_pair(c->left, c->right, c);
+	pthread_mutex_unlock(&sim->table_mtx);
+	if (st)
+		return (1);
+	log_take(sim, c->id);
+	log_take(sim, c->id);
+	return (0);
 }

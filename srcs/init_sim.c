@@ -19,8 +19,10 @@ int	init_sim(t_sim *sim, t_config *cfg)
 	memset(sim, 0, sizeof(*sim));
 	sim->cfg = *cfg;
 	sim->n_dongles = cfg->n_coders;
-	if (alloc_sim(sim) || init_shared(sim)
-		|| init_dongles(sim) || init_coders(sim))
+	if (alloc_sim(sim))
+		return (1);
+	init_dongles(sim);
+	if (init_shared(sim) || init_coders(sim))
 	{
 		cleanup_sim(sim);
 		return (1);
@@ -49,16 +51,19 @@ int	alloc_sim(t_sim *sim)
 
 int	init_shared(t_sim *sim)
 {
-	if (!sim)
+	if (pthread_mutex_init(&sim->table_mtx, NULL))
 		return (1);
-	if (pthread_mutex_init(&sim->stop_mtx, NULL))
-		return (1);
-	if (pthread_mutex_init(&sim->log_mtx, NULL))
+	if (pthread_cond_init(&sim->table_cv, NULL))
 	{
-		pthread_mutex_destroy(&sim->stop_mtx);
+		pthread_mutex_destroy(&sim->table_mtx);
 		return (1);
 	}
-	sim->stopped = 0;
+	if (pthread_mutex_init(&sim->log_mtx, NULL))
+	{
+		pthread_cond_destroy(&sim->table_cv);
+		pthread_mutex_destroy(&sim->table_mtx);
+		return (1);
+	}
 	sim->start_ms = 1;
 	return (0);
 }

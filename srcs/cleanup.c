@@ -12,32 +12,10 @@
 
 #include "codexion.h"
 
-void	destroy_dongles(t_sim *sim)
-{
-	int			i;
-	t_dongle	*d;
-
-	if (!sim || !sim->dongles)
-		return ;
-	i = 0;
-	while (i < sim->n_dongles)
-	{
-		d = &sim->dongles[i];
-		if (d->sim)
-		{
-			pthread_mutex_destroy(&d->mtx);
-			pthread_cond_destroy(&d->cv);
-			d->sim = NULL;
-		}
-		i++;
-	}
-}
-
 void	destroy_shared(t_sim *sim)
 {
-	if (!sim)
-		return ;
-	pthread_mutex_destroy(&sim->stop_mtx);
+	pthread_mutex_destroy(&sim->table_mtx);
+	pthread_cond_destroy(&sim->table_cv);
 	pthread_mutex_destroy(&sim->log_mtx);
 }
 
@@ -55,7 +33,6 @@ void	cleanup_sim(t_sim *sim)
 {
 	if (!sim)
 		return ;
-	destroy_dongles(sim);
 	destroy_coders(sim);
 	if (sim->start_ms)
 	{

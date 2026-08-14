@@ -24,50 +24,26 @@ int	is_stopped(t_sim *sim)
 {
 	int	stopped;
 
-	if (!sim)
-		return (1);
-	pthread_mutex_lock(&sim->stop_mtx);
+	pthread_mutex_lock(&sim->table_mtx);
 	stopped = sim->stopped;
-	pthread_mutex_unlock(&sim->stop_mtx);
+	pthread_mutex_unlock(&sim->table_mtx);
 	return (stopped);
 }
 
 void	set_stopped(t_sim *sim)
 {
-	int	i;
-
-	if (!sim)
-		return ;
-	pthread_mutex_lock(&sim->stop_mtx);
+	pthread_mutex_lock(&sim->table_mtx);
 	sim->stopped = 1;
-	pthread_mutex_unlock(&sim->stop_mtx);
-	i = 0;
-	while (sim->dongles && i < sim->n_dongles)
-	{
-		pthread_mutex_lock(&sim->dongles[i].mtx);
-		pthread_cond_broadcast(&sim->dongles[i].cv);
-		pthread_mutex_unlock(&sim->dongles[i].mtx);
-		i++;
-	}
+	pthread_cond_broadcast(&sim->table_cv);
+	pthread_mutex_unlock(&sim->table_mtx);
 }
 
 long long	get_deadline(t_coder *c)
 {
 	long long	base;
 
-	if (!c || !c->sim)
-		return (0);
 	base = c->last_compile;
 	if (!base)
 		base = c->sim->start_ms;
 	return (base + c->sim->cfg.t_burnout);
-}
-
-int	dongle_first(t_coder *c)
-{
-	if (!c || !c->left || !c->right)
-		return (0);
-	if (c->left->id <= c->right->id)
-		return (0);
-	return (1);
 }

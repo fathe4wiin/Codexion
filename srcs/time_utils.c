@@ -43,12 +43,3 @@ int	act_sleep(t_sim *sim, long long ms)
 	}
 	return (0);
 }
-
-void	sleep_until(long long until_ms)
-{
-	long long	now;
-
-	now = get_time_ms();
-	if (until_ms > now)
-		usleep((useconds_t)((until_ms - now) * 1000));
-}

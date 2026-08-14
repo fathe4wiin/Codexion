@@ -12,30 +12,6 @@
 
 #include "codexion.h"
 
-void	lock_pair(t_dongle *a, t_dongle *b)
-{
-	if (a->id < b->id)
-	{
-		pthread_mutex_lock(&a->mtx);
-		pthread_mutex_lock(&b->mtx);
-		return ;
-	}
-	pthread_mutex_lock(&b->mtx);
-	pthread_mutex_lock(&a->mtx);
-}
-
-void	unlock_pair(t_dongle *a, t_dongle *b)
-{
-	if (a->id < b->id)
-	{
-		pthread_mutex_unlock(&b->mtx);
-		pthread_mutex_unlock(&a->mtx);
-		return ;
-	}
-	pthread_mutex_unlock(&a->mtx);
-	pthread_mutex_unlock(&b->mtx);
-}
-
 void	claim_pair(t_dongle *a, t_dongle *b, t_coder *c)
 {
 	dequeue_waiter(a, c);
@@ -48,6 +24,31 @@ void	leave_pair(t_dongle *a, t_dongle *b, t_coder *c)
 {
 	dequeue_waiter(a, c);
 	dequeue_waiter(b, c);
-	signal_waiter(a);
-	signal_waiter(b);
+}
+
+/* 0 means nothing is cooling down, so only another thread can help us. */
+long long	pair_wake_at(t_dongle *a, t_dongle *b)
+{
+	long long	until;
+
+	until = a->ready_at;
+	if (b->ready_at > until)
+		until = b->ready_at;
+	if (until <= get_time_ms())
+		return (0);
+	return (until);
+}
+
+void	table_wait(t_sim *sim, long long until)
+{
+	struct timespec	ts;
+
+	if (!until)
+	{
+		pthread_cond_wait(&sim->table_cv, &sim->table_mtx);
+		return ;
+	}
+	ts.tv_sec = (time_t)(until / 1000);
+	ts.tv_nsec = (long)((until % 1000) * 1000000L);
+	pthread_cond_timedwait(&sim->table_cv, &sim->table_mtx, &ts);
 }

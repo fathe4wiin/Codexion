@@ -35,24 +35,24 @@ int	priority_ok(t_dongle *d, t_coder *c)
 	if (h->size < 2)
 		return (1);
 	peer = 1 - self;
-	if (req_yields(&h->data[peer], d->sim))
+	if (req_yields(&h->data[peer], c->sim))
 		return (1);
 	return (!req_better(&h->data[peer], &h->data[self], h->sched));
 }
 
 int	usable_dongle(t_dongle *d, t_coder *c)
 {
-	if (!d || !c)
-		return (0);
 	if (d->holder >= 0 || !dongle_ready(d))
 		return (0);
 	return (priority_ok(d, c));
 }
 
+/* 0 claimed the pair, 2 changed our flags (peers need waking), 1 idle retry. */
 int	claim_or_mark(t_dongle *a, t_dongle *b, t_coder *c)
 {
 	int	ua;
 	int	ub;
+	int	moved;
 
 	ua = usable_dongle(a, c);
 	ub = usable_dongle(b, c);
@@ -61,7 +61,9 @@ int	claim_or_mark(t_dongle *a, t_dongle *b, t_coder *c)
 		claim_pair(a, b, c);
 		return (0);
 	}
-	waiter_set_blocked(a, c, !ub);
-	waiter_set_blocked(b, c, !ua);
+	moved = waiter_set_blocked(a, c, !ub);
+	moved += waiter_set_blocked(b, c, !ua);
+	if (moved)
+		return (2);
 	return (1);
 }

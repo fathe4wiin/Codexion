@@ -15,13 +15,17 @@
 int	check_all_done(t_sim *sim)
 {
 	int	i;
+	int	compiled;
 
 	if (!sim || !sim->coders)
 		return (0);
 	i = 0;
 	while (i < sim->cfg.n_coders)
 	{
-		if (sim->coders[i].n_compiled < sim->cfg.n_compiles)
+		pthread_mutex_lock(&sim->coders[i].state_mtx);
+		compiled = sim->coders[i].n_compiled;
+		pthread_mutex_unlock(&sim->coders[i].state_mtx);
+		if (compiled < sim->cfg.n_compiles)
 			return (0);
 		i++;
 	}
@@ -70,7 +74,7 @@ void	*monitor_routine(void *arg)
 			set_stopped(sim);
 			break ;
 		}
-		usleep(9000);
+		usleep(10000);
 	}
 	return (NULL);
 }

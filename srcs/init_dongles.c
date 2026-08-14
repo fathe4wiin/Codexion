@@ -6,60 +6,28 @@
 /*   By: bfathi <bfathi@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/04 17:00:00 by bfathi            #+#    #+#             */
-/*   Updated: 2026/08/13 18:40:00 by bfathi           ###   ########.fr       */
+/*   Updated: 2026/08/14 18:20:00 by bfathi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static void	rollback_dongles(t_sim *sim, int last)
+void	init_one_dongle(t_dongle *d, int id, t_sched sched)
 {
-	t_dongle	*d;
-
-	while (last >= 0)
-	{
-		d = &sim->dongles[last];
-		pthread_mutex_destroy(&d->mtx);
-		pthread_cond_destroy(&d->cv);
-		d->sim = NULL;
-		last--;
-	}
-}
-
-int	init_one_dongle(t_dongle *d, int id, t_sim *sim)
-{
-	if (!d || !sim)
-		return (1);
 	d->id = id;
 	d->holder = -1;
 	d->ready_at = 0;
-	heap_init(&d->queue, sim->cfg.sched);
-	if (pthread_mutex_init(&d->mtx, NULL))
-		return (1);
-	if (pthread_cond_init(&d->cv, NULL))
-	{
-		pthread_mutex_destroy(&d->mtx);
-		return (1);
-	}
-	d->sim = sim;
-	return (0);
+	heap_init(&d->queue, sched);
 }
 
-int	init_dongles(t_sim *sim)
+void	init_dongles(t_sim *sim)
 {
 	int	i;
 
-	if (!sim || !sim->dongles)
-		return (1);
 	i = 0;
 	while (i < sim->n_dongles)
 	{
-		if (init_one_dongle(&sim->dongles[i], i, sim))
-		{
-			rollback_dongles(sim, i - 1);
-			return (1);
-		}
+		init_one_dongle(&sim->dongles[i], i, sim->cfg.sched);
 		i++;
 	}
-	return (0);
 }

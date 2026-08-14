@@ -12,30 +12,22 @@
 
 #include "codexion.h"
 
-void	arm_cooldown(t_dongle *d)
-{
-	if (!d || !d->sim)
-		return ;
-	d->ready_at = get_time_ms() + d->sim->cfg.dongle_cd;
-}
-
-void	signal_waiter(t_dongle *d)
-{
-	if (!d)
-		return ;
-	pthread_cond_broadcast(&d->cv);
-}
-
 void	release_dongle(t_dongle *d, t_coder *c)
 {
-	if (!d || !c)
+	if (d->holder != c->id)
 		return ;
-	pthread_mutex_lock(&d->mtx);
-	if (d->holder == c->id)
-	{
-		d->holder = -1;
-		arm_cooldown(d);
-		signal_waiter(d);
-	}
-	pthread_mutex_unlock(&d->mtx);
+	d->holder = -1;
+	d->ready_at = get_time_ms() + c->sim->cfg.dongle_cd;
+}
+
+void	release_two_dongles(t_coder *c)
+{
+	t_sim	*sim;
+
+	sim = c->sim;
+	pthread_mutex_lock(&sim->table_mtx);
+	release_dongle(c->left, c);
+	release_dongle(c->right, c);
+	pthread_cond_broadcast(&sim->table_cv);
+	pthread_mutex_unlock(&sim->table_mtx);
 }

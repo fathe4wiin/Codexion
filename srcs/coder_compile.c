@@ -14,55 +14,34 @@
 
 void	bump_compile(t_coder *c)
 {
-	if (!c)
-		return ;
+	pthread_mutex_lock(&c->state_mtx);
 	c->n_compiled++;
+	pthread_mutex_unlock(&c->state_mtx);
 }
 
 int	do_compile(t_coder *c)
 {
-	if (!c || !c->sim || is_stopped(c->sim))
+	if (is_stopped(c->sim))
 		return (1);
 	pthread_mutex_lock(&c->state_mtx);
 	c->last_compile = get_time_ms();
-	log_msg(c->sim, c->id, ST_COMPILE);
 	pthread_mutex_unlock(&c->state_mtx);
+	log_msg(c->sim, c->id, ST_COMPILE);
 	return (act_sleep(c->sim, c->sim->cfg.t_compile));
-}
-
-void	release_two_dongles(t_coder *c)
-{
-	if (!c)
-		return ;
-	if (c->left == c->right)
-	{
-		release_dongle(c->left, c);
-		return ;
-	}
-	if (dongle_first(c) == 0)
-	{
-		release_dongle(c->right, c);
-		release_dongle(c->left, c);
-	}
-	else
-	{
-		release_dongle(c->left, c);
-		release_dongle(c->right, c);
-	}
 }
 
 int	compile_cycle(t_coder *c)
 {
+	int	st;
+
 	if (!c || coder_should_exit(c))
 		return (1);
 	if (take_two_dongles(c))
 		return (1);
-	if (do_compile(c))
-	{
-		release_two_dongles(c);
-		return (1);
-	}
+	st = do_compile(c);
 	release_two_dongles(c);
+	if (st)
+		return (1);
 	bump_compile(c);
 	return (0);
 }

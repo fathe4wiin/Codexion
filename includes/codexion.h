@@ -74,10 +74,7 @@ typedef struct s_dongle
 	int				id;
 	int				holder;
 	long long		ready_at;
-	pthread_mutex_t	mtx;
-	pthread_cond_t	cv;
 	t_heap			queue;
-	t_sim			*sim;
 }	t_dongle;
 
 typedef struct s_coder
@@ -92,6 +89,11 @@ typedef struct s_coder
 	pthread_mutex_t state_mtx;
 }	t_coder;
 
+/*
+** table_mtx guards every dongle (holder, ready_at, queue) and stopped;
+** table_cv is signalled on every change that can unblock a waiter.
+** Lock order is log_mtx -> table_mtx, so never log while holding table_mtx.
+*/
 typedef struct s_sim
 {
 	t_config		cfg;
@@ -100,7 +102,8 @@ typedef struct s_sim
 	int				n_dongles;
 	int				stopped;
 	long long		start_ms;
-	pthread_mutex_t	stop_mtx;
+	pthread_mutex_t	table_mtx;
+	pthread_cond_t	table_cv;
 	pthread_mutex_t	log_mtx;
 	pthread_t		monitor;
 }	t_sim;
@@ -118,15 +121,13 @@ long long	get_deadline(t_coder *c);
 long long	get_time_ms(void);
 long long	elapsed_ms(t_sim *sim);
 int			act_sleep(t_sim *sim, long long ms);
-void		sleep_until(long long until_ms);
-int			dongle_first(t_coder *c);
 
 int			init_sim(t_sim *sim, t_config *cfg);
 int			alloc_sim(t_sim *sim);
 int			init_shared(t_sim *sim);
 void		stamp_start(t_sim *sim);
-int			init_dongles(t_sim *sim);
-int			init_one_dongle(t_dongle *d, int id, t_sim *sim);
+void		init_dongles(t_sim *sim);
+void		init_one_dongle(t_dongle *d, int id, t_sched sched);
 int			init_coders(t_sim *sim);
 void		link_coder_dongles(t_sim *sim);
 void		reset_coder(t_coder *c, int id, t_sim *sim);
@@ -142,17 +143,14 @@ int			priority_ok(t_dongle *d, t_coder *c);
 int			usable_dongle(t_dongle *d, t_coder *c);
 int			ensure_queued(t_dongle *d, t_coder *c, t_req *req);
 void		dequeue_waiter(t_dongle *d, t_coder *c);
-void		waiter_set_blocked(t_dongle *d, t_coder *c, int v);
-void		lock_pair(t_dongle *a, t_dongle *b);
-void		unlock_pair(t_dongle *a, t_dongle *b);
+int			waiter_set_blocked(t_dongle *d, t_coder *c, int v);
 void		claim_pair(t_dongle *a, t_dongle *b, t_coder *c);
 void		leave_pair(t_dongle *a, t_dongle *b, t_coder *c);
 int			claim_or_mark(t_dongle *a, t_dongle *b, t_coder *c);
 int			req_yields(t_req *r, t_sim *sim);
-void		wait_pair_tick(t_dongle *a, t_dongle *b);
+long long	pair_wake_at(t_dongle *a, t_dongle *b);
+void		table_wait(t_sim *sim, long long until);
 void		release_dongle(t_dongle *d, t_coder *c);
-void		arm_cooldown(t_dongle *d);
-void		signal_waiter(t_dongle *d);
 
 void		*coder_routine(void *arg);
 int			coder_loop(t_coder *c);
@@ -161,6 +159,7 @@ int			compile_cycle(t_coder *c);
 void		build_req(t_req *req, t_coder *c);
 int			join_pair_queues(t_dongle *a, t_dongle *b, t_coder *c);
 int			try_pair_once(t_coder *c, t_dongle *a, t_dongle *b);
+int			wait_for_stop(t_sim *sim);
 int			take_two_dongles(t_coder *c);
 int			do_compile(t_coder *c);
 void		release_two_dongles(t_coder *c);
@@ -182,7 +181,6 @@ int			spawn_monitor(t_sim *sim);
 int			join_all(t_sim *sim);
 
 void		cleanup_sim(t_sim *sim);
-void		destroy_dongles(t_sim *sim);
 void		destroy_shared(t_sim *sim);
 void		free_sim(t_sim *sim);
 
