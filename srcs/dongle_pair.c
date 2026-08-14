@@ -39,16 +39,18 @@ long long	pair_wake_at(t_dongle *a, t_dongle *b)
 	return (until);
 }
 
+/*
+** A cooldown is a time event nobody can signal, and no earlier event can
+** help us since we still need that same dongle, so we wait it out unlocked.
+*/
 void	table_wait(t_sim *sim, long long until)
 {
-	struct timespec	ts;
-
 	if (!until)
 	{
 		pthread_cond_wait(&sim->table_cv, &sim->table_mtx);
 		return ;
 	}
-	ts.tv_sec = (time_t)(until / 1000);
-	ts.tv_nsec = (long)((until % 1000) * 1000000L);
-	pthread_cond_timedwait(&sim->table_cv, &sim->table_mtx, &ts);
+	pthread_mutex_unlock(&sim->table_mtx);
+	act_sleep(sim, until - get_time_ms());
+	pthread_mutex_lock(&sim->table_mtx);
 }
