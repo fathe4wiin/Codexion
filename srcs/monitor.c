@@ -74,7 +74,7 @@ void	*monitor_routine(void *arg)
 			set_stopped(sim);
 			break ;
 		}
-		usleep(10000);
+		usleep(200);
 	}
 	return (NULL);
 }
